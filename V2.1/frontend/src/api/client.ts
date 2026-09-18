@@ -1,8 +1,12 @@
 import axios from 'axios';
 import { SystemConfig, TrajectoryPlan, BaselineEpoch } from '../types';
 
+const BACKEND_BASE = process.env.NEXT_PUBLIC_BACKEND_URL
+  ? `${process.env.NEXT_PUBLIC_BACKEND_URL.replace(/\/$/, '')}/api`
+  : '/api';
+
 const apiClient = axios.create({
-  baseURL: '/api',
+  baseURL: BACKEND_BASE,
   timeout: 10000,
   headers: {
     'Content-Type': 'application/json',

@@ -11,7 +11,10 @@ export const ClientWebSocketProvider: React.FC<{ children: React.ReactNode }> = 
 
   useEffect(() => {
     // Flush persisted ink objects on first page mount
-    fetch('/api/twin/reset', { method: 'POST' }).catch(() => {
+    const resetUrl = process.env.NEXT_PUBLIC_BACKEND_URL
+      ? `${process.env.NEXT_PUBLIC_BACKEND_URL.replace(/\/$/, '')}/api/twin/reset`
+      : '/api/twin/reset';
+    fetch(resetUrl, { method: 'POST' }).catch(() => {
       // Backend may be starting up
     });
 

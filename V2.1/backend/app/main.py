@@ -161,6 +161,11 @@ def create_app() -> FastAPI:
     static_dirs = [
         Path(__file__).resolve().parent.parent.parent / "frontend" / "out",
         Path("frontend/out"),
+        Path("/home/container/out"),
+        Path("/home/container/frontend/out"),
+        Path("/home/container/frontend_out"),
+        Path("out"),
+        Path("frontend_out"),
         Path("/app/frontend_out"),
         Path("static_frontend"),
     ]

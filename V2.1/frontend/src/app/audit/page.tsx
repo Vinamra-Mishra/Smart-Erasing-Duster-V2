@@ -20,7 +20,10 @@ export default function AuditPage() {
   const [history, setHistory] = useState<any[]>([]);
 
   useEffect(() => {
-    fetch('/api/twin/history?limit=30')
+    const historyUrl = process.env.NEXT_PUBLIC_BACKEND_URL
+      ? `${process.env.NEXT_PUBLIC_BACKEND_URL.replace(/\/$/, '')}/api/twin/history?limit=30`
+      : '/api/twin/history?limit=30';
+    fetch(historyUrl)
       .then((res) => (res.ok ? res.json() : []))
       .then((data) => setHistory(data))
       .catch(() => setHistory([]));

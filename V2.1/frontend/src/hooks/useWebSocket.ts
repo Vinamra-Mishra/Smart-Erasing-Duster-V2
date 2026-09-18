@@ -39,14 +39,27 @@ export function useWebSocket() {
 
   const connect = useCallback(() => {
     if (typeof window === 'undefined') return;
-    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const host = window.location.hostname || '127.0.0.1';
-    const defaultPort = window.location.port === '3000' ? '8000' : (window.location.port || '8000');
-    const port = process.env.NEXT_PUBLIC_WS_PORT || defaultPort;
-    const portSuffix = port ? `:${port}` : '';
+    let eventsUrl = '';
+    let telemetryUrl = '';
 
-    const eventsUrl = `${protocol}//${host}${portSuffix}/ws/events`;
-    const telemetryUrl = `${protocol}//${host}${portSuffix}/ws/telemetry`;
+    if (process.env.NEXT_PUBLIC_WS_URL) {
+      const baseWs = process.env.NEXT_PUBLIC_WS_URL.replace(/\/$/, '');
+      eventsUrl = `${baseWs}/ws/events`;
+      telemetryUrl = `${baseWs}/ws/telemetry`;
+    } else if (process.env.NEXT_PUBLIC_BACKEND_URL) {
+      const rawBackend = process.env.NEXT_PUBLIC_BACKEND_URL.replace(/\/$/, '');
+      const wsBackend = rawBackend.replace(/^http:/, 'ws:').replace(/^https:/, 'wss:');
+      eventsUrl = `${wsBackend}/ws/events`;
+      telemetryUrl = `${wsBackend}/ws/telemetry`;
+    } else {
+      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+      const host = window.location.hostname || '127.0.0.1';
+      const defaultPort = window.location.port === '3000' ? '8000' : (window.location.port || '8000');
+      const port = process.env.NEXT_PUBLIC_WS_PORT || defaultPort;
+      const portSuffix = port ? `:${port}` : '';
+      eventsUrl = `${protocol}//${host}${portSuffix}/ws/events`;
+      telemetryUrl = `${protocol}//${host}${portSuffix}/ws/telemetry`;
+    }
 
     try {
       const eventsWs = new WebSocket(eventsUrl);
