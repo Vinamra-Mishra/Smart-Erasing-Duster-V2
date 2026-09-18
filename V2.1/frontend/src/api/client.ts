@@ -1,12 +1,10 @@
 import axios from 'axios';
 import { SystemConfig, TrajectoryPlan, BaselineEpoch } from '../types';
 
-const BACKEND_BASE = process.env.NEXT_PUBLIC_BACKEND_URL
-  ? `${process.env.NEXT_PUBLIC_BACKEND_URL.replace(/\/$/, '')}/api`
-  : '/api';
-
+// On Vercel and in dev, relative '/api' is proxied to the backend via next.config.mjs rewrites,
+// preventing browser Mixed Content blocks between HTTPS Vercel and HTTP HidenCloud.
 const apiClient = axios.create({
-  baseURL: BACKEND_BASE,
+  baseURL: '/api',
   timeout: 10000,
   headers: {
     'Content-Type': 'application/json',

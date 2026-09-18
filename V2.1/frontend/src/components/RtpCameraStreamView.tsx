@@ -6,9 +6,6 @@ import { useConfigStore } from '../store/useConfigStore';
 import { usePerceptionStore } from '../store/usePerceptionStore';
 
 const getStreamUrl = () => {
-  if (process.env.NEXT_PUBLIC_BACKEND_URL) {
-    return `${process.env.NEXT_PUBLIC_BACKEND_URL.replace(/\/$/, '')}/api/camera/stream`;
-  }
   if (typeof window === 'undefined') return '/api/camera/stream';
   if (window.location.port === '3000') {
     return 'http://127.0.0.1:8000/api/camera/stream';

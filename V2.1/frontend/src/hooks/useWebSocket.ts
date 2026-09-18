@@ -25,6 +25,7 @@ export function useWebSocket() {
   const eventsWsRef = useRef<WebSocket | null>(null);
   const telemetryWsRef = useRef<WebSocket | null>(null);
   const reconnectTimerRef = useRef<number | null>(null);
+  const pollingTimerRef = useRef<number | null>(null);
 
   const setTwinDelta = useTwinStore((state) => state.setTwinDelta);
   const addReconcilerEvent = useTwinStore((state) => state.addReconcilerEvent);
@@ -37,20 +38,65 @@ export function useWebSocket() {
   const setDisturbances = usePerceptionStore((state) => state.setDisturbances);
   const setStreamStatus = usePerceptionStore((state) => state.setStreamStatus);
 
+  const stopHttpPolling = useCallback(() => {
+    if (pollingTimerRef.current !== null) {
+      window.clearInterval(pollingTimerRef.current);
+      pollingTimerRef.current = null;
+    }
+  }, []);
+
+  const startHttpPolling = useCallback(() => {
+    if (pollingTimerRef.current !== null) return;
+
+    const poll = async () => {
+      try {
+        const [stateRes, execRes] = await Promise.all([
+          fetch('/api/twin/state').catch(() => null),
+          fetch('/api/twin/execution').catch(() => null),
+        ]);
+        if (stateRes && stateRes.ok) {
+          const stateData = await stateRes.json();
+          if (stateData && stateData.objects) {
+            setTwinDelta(stateData.objects, stateData.occluded, stateData.uncertain);
+          }
+          setStreamStatus(true, 30);
+        }
+        if (execRes && execRes.ok) {
+          const execData = await execRes.json();
+          if (execData.state) setExecutionState(execData.state);
+          if (execData.residual_tier) setResidualTier(execData.residual_tier);
+          if (execData.duster_pose) updateDusterPose(execData.duster_pose);
+        }
+      } catch {
+        // Retry next tick
+      }
+    };
+
+    poll();
+    pollingTimerRef.current = window.setInterval(poll, 1500);
+  }, [setTwinDelta, setStreamStatus, setExecutionState, setResidualTier, updateDusterPose]);
+
   const connect = useCallback(() => {
     if (typeof window === 'undefined') return;
+
+    const normalizeWs = (url: string | undefined): string => {
+      if (!url) return '';
+      const s = url.trim();
+      if (!s) return '';
+      if (/^wss?:\/\//i.test(s)) return s.replace(/\/$/, '');
+      if (/^https:\/\//i.test(s)) return s.replace(/^https:\/\//i, 'wss://').replace(/\/$/, '');
+      if (/^http:\/\//i.test(s)) return s.replace(/^http:\/\//i, 'ws://').replace(/\/$/, '');
+      return `ws://${s}`.replace(/\/$/, '');
+    };
+
     let eventsUrl = '';
     let telemetryUrl = '';
 
-    if (process.env.NEXT_PUBLIC_WS_URL) {
-      const baseWs = process.env.NEXT_PUBLIC_WS_URL.replace(/\/$/, '');
+    const customWs = process.env.NEXT_PUBLIC_WS_URL || process.env.NEXT_PUBLIC_BACKEND_URL;
+    if (customWs) {
+      const baseWs = normalizeWs(customWs);
       eventsUrl = `${baseWs}/ws/events`;
       telemetryUrl = `${baseWs}/ws/telemetry`;
-    } else if (process.env.NEXT_PUBLIC_BACKEND_URL) {
-      const rawBackend = process.env.NEXT_PUBLIC_BACKEND_URL.replace(/\/$/, '');
-      const wsBackend = rawBackend.replace(/^http:/, 'ws:').replace(/^https:/, 'wss:');
-      eventsUrl = `${wsBackend}/ws/events`;
-      telemetryUrl = `${wsBackend}/ws/telemetry`;
     } else {
       const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
       const host = window.location.hostname || '127.0.0.1';
@@ -72,6 +118,11 @@ export function useWebSocket() {
       eventsWs.onopen = () => {
         globalEventsWs = eventsWs;
         setStreamStatus(true);
+        stopHttpPolling();
+      };
+
+      eventsWs.onerror = () => {
+        startHttpPolling();
       };
 
 
@@ -235,10 +286,16 @@ export function useWebSocket() {
       };
 
 
+      eventsWs.onclose = () => {
+        startHttpPolling();
+        scheduleReconnect();
+      };
+
       telemetryWs.onclose = () => {
         // Will reconnect together
       };
     } catch {
+      startHttpPolling();
       scheduleReconnect();
     }
   }, [
@@ -252,6 +309,8 @@ export function useWebSocket() {
     setTwinDelta,
     setWaypointIndex,
     updateDusterPose,
+    startHttpPolling,
+    stopHttpPolling,
   ]);
 
   const scheduleReconnect = useCallback(() => {
@@ -268,10 +327,11 @@ export function useWebSocket() {
       if (reconnectTimerRef.current !== null) {
         window.clearTimeout(reconnectTimerRef.current);
       }
+      stopHttpPolling();
       eventsWsRef.current?.close();
       telemetryWsRef.current?.close();
     };
-  }, [connect]);
+  }, [connect, stopHttpPolling]);
 
   const sendEvent = useCallback((type: string, payload: Record<string, unknown>) => {
     if (eventsWsRef.current && eventsWsRef.current.readyState === WebSocket.OPEN) {

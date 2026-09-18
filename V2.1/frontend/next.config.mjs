@@ -1,3 +1,8 @@
+const rawBackend = process.env.NEXT_PUBLIC_BACKEND_URL;
+const backendTarget = rawBackend
+  ? (/^https?:\/\//i.test(rawBackend.trim()) ? rawBackend.trim() : `http://${rawBackend.trim()}`).replace(/\/$/, '')
+  : 'http://paloma.hidencloud.com:24666';
+
 const isExport = process.env.NEXT_OUTPUT === 'export';
 
 /** @type {import('next').NextConfig} */
@@ -13,7 +18,7 @@ const nextConfig = {
           return [
             {
               source: '/api/:path*',
-              destination: 'http://127.0.0.1:8000/api/:path*',
+              destination: `${backendTarget}/api/:path*`,
             },
           ];
         },

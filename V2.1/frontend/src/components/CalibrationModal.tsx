@@ -564,11 +564,7 @@ export const CalibrationModal: React.FC<CalibrationModalProps> = ({ isOpen, onCl
         <div className="relative flex-1 min-h-[320px] max-h-[500px] bg-slate-950 rounded-lg border border-slate-800 overflow-hidden flex items-center justify-center select-none">
           {/* Live Un-warped Camera MJPEG Feed */}
           <img
-            src={
-              process.env.NEXT_PUBLIC_BACKEND_URL
-                ? `${process.env.NEXT_PUBLIC_BACKEND_URL.replace(/\/$/, '')}/api/camera/raw-stream?t=${streamKey}`
-                : `/api/camera/raw-stream?t=${streamKey}`
-            }
+            src={`/api/camera/raw-stream?t=${streamKey}`}
             alt="Raw Camera Feed"
             className="w-full h-full object-contain pointer-events-none"
 
