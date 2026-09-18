@@ -1,0 +1,52 @@
+system:
+  board_width_mm: 1000.0
+  board_height_mm: 700.0
+  camera_index: 1 # 1 is OBS Virtual Camera (0 is Integrated Camera)
+  fps: 30
+  transport:
+    rtp_host: "127.0.0.1"
+    rtp_port: 5004
+    ws_port: 8000
+
+calibration:
+  aruco_dict: "DICT_4X4_50"
+  corner_ids: [0, 1, 2, 3] # TL, TR, BR, BL
+
+baseline:
+  frames_to_accumulate: 20
+  dirty_board_threshold: 0.04 # Reject baseline if edge density > 4%
+  allow_dirty_board_override: false
+
+perception:
+  evidence_weights:
+    w_rgb: 0.25
+    w_hsv: 0.20
+    w_lab: 0.20
+    w_edge: 0.20
+    w_contrast: 0.15
+  disturbance_penalties:
+    w_shadow: 0.40
+    w_glare: 0.50
+    w_occlusion: 0.80
+    w_projector: 0.60
+  stroke_min_area: 15
+  stroke_max_expected_thickness_mm: 12.0
+  matching_iou_threshold: 0.40
+  matching_centroid_dist_mm: 30.0
+
+occlusion:
+  min_area_fraction: 0.045 # 4.5% of board area
+  min_displacement_px: 12
+  confirmation_frames: 3
+
+cleaning:
+  duster_width_mm: 162.0    # 16.2 cm (configurable)
+  duster_height_mm: 58.0    # 5.8 cm (configurable)
+  duster_thickness_mm: 42.0 # 4.2 cm (configurable)
+  lane_overlap: 0.28        # 28% lane overlap (configurable)
+  nominal_efficiency: 0.85
+  clean_threshold: 0.01     # <= 1% is CLEANED
+  residual_major_threshold: 0.05 # >= 5% is PARTIALLY_CLEANED (major sweep)
+  max_reclean_attempts: 3   # Promotion to PERMANENT_DEFECT
+  max_mission_duration_sec: 180.0 # Wall-clock safety cap
+  residual_trigger_timeout_sec: 5.0

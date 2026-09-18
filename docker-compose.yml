@@ -1,0 +1,19 @@
+version: "3.8"
+
+services:
+  smart-erasing-duster:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: smart_duster_v21
+    restart: unless-stopped
+    ports:
+      # Allocation 1: Frontend Web Dashboard, REST API & WebSocket Telemetry
+      - "24666:24666"
+      # Allocation 2: High-Speed RTP Video Stream (UDP)
+      - "25343:25343/udp"
+    environment:
+      - PORT=24666
+      - SERVER_PORT=24666
+      - RTP_PORT=25343
+      - RTP_HOST=0.0.0.0
